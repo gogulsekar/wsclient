@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -20,25 +21,36 @@ func main() {
 		return
 	}
 	defer websocketConn.Close()
+	go WriteMessage(websocketConn) // Start a goroutine to send messages
+	go ReadMessage(websocketConn)  // Start a goroutine to read messages
+	time.Sleep(2 * time.Minute)    // Wait for 30 seconds to allow message exchange
+	os.Exit(0)                     // Exit the program gracefully
+}
 
-	errWrite := websocketConn.WriteMessage(websocket.TextMessage, []byte("Hello, WebSocket server!"))
-	if errWrite != nil {
-		fmt.Println("Error sending message:", errWrite)
-		return
+func WriteMessage(websocketConn *websocket.Conn) {
+	data := ""
+	for data != "exit" { // Send a message to the WebSocket server
+		fmt.Println("Enter message")
+		fmt.Scanln(&data)
+		errWrite := websocketConn.WriteMessage(websocket.TextMessage, []byte(data))
+		if errWrite != nil {
+			fmt.Println("Error sending message:", errWrite)
+			return
+		}
 	}
+}
 
-	for { // Read message from WebSocket server
+func ReadMessage(websocketConn *websocket.Conn) {
+	data := ""
+	for data != "exit" { // Read message from WebSocket server
 		_, message, err := websocketConn.ReadMessage()
 		if err != nil {
 			fmt.Println("Error reading message:", err)
 			break
 		}
 		fmt.Printf("Received message: %s\n", message)
-
 		//TODO:- learn how to break the loop
 		//time.Sleep(30 * time.Second)
 		//websocketConn.Close()
 	}
-
-	os.Exit(0) // Exit the program gracefully
 }
